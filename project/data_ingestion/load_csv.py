@@ -5,12 +5,12 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import pandas as pd
 
-from database import SessionLocal
-from models import NameRecord
+from backend.database import SessionLocal
+from backend.models import NameRecord
 
 
 df = pd.read_csv(
-    "../Wykaz_imion_pierwszych_nadanych_dzieciom_w_Polsce_w_2024_wg_USC.csv",
+    "../data/Wykaz_imion_pierwszych_nadanych_dzieciom_w_Polsce_w_2024_wg_USC.csv",
     sep=","
 )
 
