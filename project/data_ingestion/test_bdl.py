@@ -16,7 +16,6 @@ response = requests.get(url, params=params)
 data = response.json()
 
 records = []
-
 for res in data["results"]:
 
     records.append({

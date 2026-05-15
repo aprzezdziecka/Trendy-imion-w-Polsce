@@ -20,3 +20,14 @@ class NameRecord(Base):
     liczba_wystapien = Column(Integer)
 
     __table_args__ = (UniqueConstraint('kt_usc', 'imie_pierwsze', 'plec', name='_name_year_uc'),)
+
+class PopulationRecord(Base):
+    __tablename__ = "population_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    id_powiat = Column(Integer)
+    nazwa = Column(String)
+    rok = Column(Integer)
+    ludnosc = Column(Integer)
+
+    __table_args__ = (UniqueConstraint('id_powiat', 'rok', name='_powiat_year_uc'),)
