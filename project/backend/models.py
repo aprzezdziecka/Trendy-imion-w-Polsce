@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, UniqueConstraint
 from .database import Base
 
 
@@ -18,3 +18,5 @@ class NameRecord(Base):
     plec = Column(String)
 
     liczba_wystapien = Column(Integer)
+
+    __table_args__ = (UniqueConstraint('kt_usc', 'imie_pierwsze', 'plec', name='_name_year_uc'),)

@@ -20,17 +20,27 @@ db = SessionLocal()
 
 for _, row in df.iterrows():
 
-    record = NameRecord(
+    existing = db.query(NameRecord).filter_by(
         kt_usc=int(row["KT_USC"]),
         wojewodztwo=row["WOJEWÓDZTWO"],
         powiat=row["POWIAT"],
         gmina=row["GMINA"],
         imie_pierwsze=row["IMIĘ_PIERWSZE"],
         plec=row["PŁEĆ"],
-        liczba_wystapien=int(row["LICZBA_WYSTĄPIEŃ"])
-    )
+    ).first()
+    
+    if not existing:
+        record = NameRecord(
+            kt_usc=int(row["KT_USC"]),
+            wojewodztwo=row["WOJEWÓDZTWO"],
+            powiat=row["POWIAT"],
+            gmina=row["GMINA"],
+            imie_pierwsze=row["IMIĘ_PIERWSZE"],
+            plec=row["PŁEĆ"],
+            liczba_wystapien=int(row["LICZBA_WYSTĄPIEŃ"])
+        )
 
-    db.add(record)
+        db.add(record)
 
 db.commit()
 
