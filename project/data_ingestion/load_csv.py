@@ -10,7 +10,7 @@ from backend.models import NameRecord
 
 
 df = pd.read_csv(
-    "../data/Wykaz_imion_pierwszych_nadanych_dzieciom_w_Polsce_w_2024_wg_USC.csv",
+    "data/Wykaz_imion_pierwszych_nadanych_dzieciom_w_Polsce_w_2024_wg_USC.csv",
     sep=","
 )
 
