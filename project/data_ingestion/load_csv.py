@@ -1,5 +1,9 @@
 import sys
 import os
+from backend.database import SessionLocal, engine
+from backend.models import Base, NameRecord
+
+Base.metadata.create_all(bind=engine)
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -18,28 +22,29 @@ print(df.columns)
 
 db = SessionLocal()
 
-for _, row in df.iterrows():
+df['id_powiat'] = df['KT_USC'].apply(lambda x: str(x).zfill(7)[:4])
 
+aggregated = df.groupby(
+    ['id_powiat', 'WOJEWÓDZTWO', 'POWIAT', 'IMIĘ_PIERWSZE', 'PŁEĆ'],
+    as_index=False
+)['LICZBA_WYSTĄPIEŃ'].sum()
+
+for _, row in aggregated.iterrows():
     existing = db.query(NameRecord).filter_by(
-        kt_usc=int(row["KT_USC"]),
-        wojewodztwo=row["WOJEWÓDZTWO"],
-        powiat=row["POWIAT"],
-        gmina=row["GMINA"],
-        imie_pierwsze=row["IMIĘ_PIERWSZE"],
-        plec=row["PŁEĆ"],
+        id_powiat=row['id_powiat'],
+        imie_pierwsze=row['IMIĘ_PIERWSZE'],
+        plec=row['PŁEĆ'],
     ).first()
-    
+
     if not existing:
         record = NameRecord(
-            kt_usc=int(row["KT_USC"]),
-            wojewodztwo=row["WOJEWÓDZTWO"],
-            powiat=row["POWIAT"],
-            gmina=row["GMINA"],
-            imie_pierwsze=row["IMIĘ_PIERWSZE"],
-            plec=row["PŁEĆ"],
-            liczba_wystapien=int(row["LICZBA_WYSTĄPIEŃ"])
+            id_powiat=row['id_powiat'],
+            wojewodztwo=row['WOJEWÓDZTWO'],
+            powiat=row['POWIAT'],
+            imie_pierwsze=row['IMIĘ_PIERWSZE'],
+            plec=row['PŁEĆ'],
+            liczba_wystapien=int(row['LICZBA_WYSTĄPIEŃ'])
         )
-
         db.add(record)
 
 db.commit()

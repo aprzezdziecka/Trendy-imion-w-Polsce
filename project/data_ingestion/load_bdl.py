@@ -27,13 +27,13 @@ try:
         for res in data["results"]:
             clean_id = "".join([res["id"][i] for i in teryt_pos])
             
-            existing = db.query(PopulationRecord).filter_by(id_powiat=int(clean_id), rok=res["values"][0]["year"]).first()
+            existing = db.query(PopulationRecord).filter_by(id_powiat=str(clean_id), rok=res["values"][0]["year"]).first()
             
             if existing:
                 existing.ludnosc = res["values"][0]["val"]
             else:
                 new_rec = PopulationRecord(
-                    id_powiat = int(clean_id), # 4 cyfrowe id powiatu          
+                    id_powiat = str(clean_id), # 4 cyfrowe id powiatu          
                     nazwa=res["name"],
                     rok=int(res["values"][0]["year"]),
                     ludnosc=int(res["values"][0]["val"])
