@@ -1,5 +1,7 @@
 import logging
 from fastapi import FastAPI
+from apscheduler.schedulers.background import BackgroundScheduler
+from .scheduler import refresh_data
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,6 +34,25 @@ app.include_router(names.router)
 app.include_router(gus.router)
 
 Base.metadata.create_all(bind=engine)
+
+scheduler = BackgroundScheduler()
+
+scheduler.add_job(
+    refresh_data,
+    trigger="cron",
+    day=1,
+    hour=3,
+    minute=0
+)
+
+# scheduler.add_job(
+#     refresh_data,
+#     trigger="interval",
+#     seconds=10
+# )
+
+
+scheduler.start()
 
 @app.get("/")
 def root():

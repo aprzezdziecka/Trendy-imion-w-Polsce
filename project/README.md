@@ -6,6 +6,7 @@ Aktualna instrukcja:
 
 4. w razie potrzeby `docker compose down -v` lub `docker compose down`
 
+docker exec -it project-db-1 psql -U postgres -d namesdb
 
 Swagger będzie na:
 http://127.0.0.1:8000/docs 
