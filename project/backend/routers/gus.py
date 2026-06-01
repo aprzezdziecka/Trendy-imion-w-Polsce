@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
@@ -5,6 +6,7 @@ from ..database import SessionLocal
 from ..models import GUSRecord, NameRecord
 from ..schemas import GUSRecordOut
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/gus", tags=["gus"])
 
 def get_db():
@@ -38,7 +40,9 @@ def get_gus_data(db: Session = Depends(get_db)):
     ),
 )
 def gus_analysis(db: Session = Depends(get_db)):
+    logger.info("Rozpoczynam analizę GUS")
     gus_records = db.query(GUSRecord).all()
+    logger.info(f"Załadowano {len(gus_records)} rekordów GUS")
 
     # Różnorodność imion per powiat
     div_rows = db.query(
@@ -202,6 +206,7 @@ def gus_analysis(db: Session = Depends(get_db)):
             })
 
     woj_ranking.sort(key=lambda x: -x["avg_urbanizacja"])
+    logger.info(f"Analiza GUS zakończona: {len(scatter_data)} punktów scatter, {len(woj_ranking)} województw")
 
     return {
         "scatter_data": scatter_data,

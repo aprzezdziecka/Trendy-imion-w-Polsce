@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
@@ -5,6 +6,7 @@ from ..database import SessionLocal
 from ..models import NameRecord, GUSRecord
 from ..schemas import NameRecordOut
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/names", tags=["names"])
 
 def get_db():
@@ -50,12 +52,14 @@ def get_top_names(plec: str = None, limit: int = 10, db: Session = Depends(get_d
     ),
 )
 def search_name(imie: str, plec: str = None, db: Session = Depends(get_db)):
+    logger.info(f"Wyszukiwanie imienia: {imie.upper()}, płeć: {plec or 'wszystkie'}")
     q = db.query(NameRecord).filter(NameRecord.imie_pierwsze == imie.upper())
     if plec:
         q = q.filter(NameRecord.plec == plec)
     records = q.order_by(NameRecord.liczba_wystapien.desc()).all()
 
     if not records:
+        logger.warning(f"Nie znaleziono imienia: {imie.upper()}")
         return []
 
     powiat_ids = [r.id_powiat for r in records]
@@ -133,6 +137,7 @@ def search_name(imie: str, plec: str = None, db: Session = Depends(get_db)):
             "rank_woj_all": woj_rank_all,
             "rank_woj_plec": woj_rank_plec,
         })
+    logger.info(f"Zwrócono {len(result)} rekordów dla: {imie.upper()}")
     return result
 
 @router.get(
@@ -141,6 +146,7 @@ def search_name(imie: str, plec: str = None, db: Session = Depends(get_db)):
     description="Zwraca słownik wszystkich województw wraz z listą powiatów. Używane do budowania selektorów w UI.",
 )
 def get_regions(db: Session = Depends(get_db)):
+    logger.info("Pobieranie listy województw i powiatów")
     rows = db.query(
         NameRecord.id_powiat,
         NameRecord.powiat,
@@ -153,6 +159,7 @@ def get_regions(db: Session = Depends(get_db)):
         if woj_kod not in result:
             result[woj_kod] = {"nazwa": r.wojewodztwo.title(), "powiaty": []}
         result[woj_kod]["powiaty"].append({"id": r.id_powiat, "nazwa": r.powiat.title()})
+    logger.info(f"Zwrócono {len(result)} województw")
     return result
 
 
@@ -166,6 +173,7 @@ def get_regions(db: Session = Depends(get_db)):
     ),
 )
 def regional_top(level: str, id: str, limit: int = 5, db: Session = Depends(get_db)):
+    logger.info(f"Statystyki regionalne: level={level}, id={id}, limit={limit}")
     q = db.query(
         NameRecord.imie_pierwsze,
         NameRecord.plec,
@@ -235,6 +243,7 @@ def regional_top(level: str, id: str, limit: int = 5, db: Session = Depends(get_
         for name in top10_names
     ]
 
+    logger.info(f"Region {level}={id}: {total_births} nadań, {unique_names} unikalnych imion, różnorodność={diversity}")
     return {
         "total_births": total_births,
         "unique_names": unique_names,
@@ -257,12 +266,14 @@ def regional_top(level: str, id: str, limit: int = 5, db: Session = Depends(get_
     ),
 )
 def name_stats(imie: str, plec: str = None, db: Session = Depends(get_db)):
+    logger.info(f"Statystyki dla imienia: {imie.upper()}")
     q = db.query(NameRecord).filter(NameRecord.imie_pierwsze == imie.upper())
     if plec:
         q = q.filter(NameRecord.plec == plec)
     records = q.all()
 
     if not records:
+        logger.warning(f"Nie znaleziono imienia: {imie.upper()}")
         return {"error": "Nie znaleziono imienia"}
 
     total = sum(r.liczba_wystapien for r in records)
@@ -288,6 +299,7 @@ def name_stats(imie: str, plec: str = None, db: Session = Depends(get_db)):
     krajowa_srednia = db.query(func.avg(GUSRecord.wskaznik_urbanizacji)).scalar()
     krajowa_srednia = round(float(krajowa_srednia), 1) if krajowa_srednia else None
 
+    logger.info(f"{imie.upper()}: {total} nadań w {len(records)} powiatach, {liczba_wojewodztw} województwach")
     return {
         "imie": imie.upper(),
         "total": total,
