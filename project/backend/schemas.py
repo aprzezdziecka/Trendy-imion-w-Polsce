@@ -1,6 +1,10 @@
 from pydantic import BaseModel
+from pydantic import ConfigDict
+
 
 class NameRecordOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id_powiat: str
     wojewodztwo: str
     powiat: str
@@ -8,16 +12,13 @@ class NameRecordOut(BaseModel):
     plec: str
     liczba_wystapien: int
 
-    class Config:
-        from_attributes = True
 
 class GUSRecordOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id_powiat: str
     nazwa: str
     rok: int
     ludnosc: int
     wskaznik_urbanizacji: float | None
     wiek: float | None
-    
-    class Config:
-        from_attributes = True
