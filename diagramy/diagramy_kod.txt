@@ -1,0 +1,140 @@
+workspace {
+
+    model {
+
+        user = person "Użytkownik" {
+            description "Analizuje popularność imion w Polsce, przegląda rankingi, mapy oraz dane demograficzne."
+        }
+
+        system = softwareSystem "Trendy Imion w Polsce" {
+            description "Aplikacja webowa integrująca dane USC i GUS w celu analizy popularności imion oraz charakterystyki demograficznej regionów Polski."
+        }
+
+        gus = softwareSystem "GUS BDL API" {
+            description "Bank Danych Lokalnych GUS udostępniający dane o ludności, urbanizacji oraz strukturze demograficznej."
+            tags "External System"
+        }
+
+        usc = softwareSystem "Portal Dane.gov.pl / Dane USC" {
+            description "Zewnętrzny portal danych, z którego pobierany jest oficjalny wykaz imion pierwszych nadanych dzieciom w Polsce (pliki CSV publikowane przez Ministerstwo Cyfryzacji)."
+            tags "External System"
+        }
+
+        user -> system "Przegląda rankingi, mapy, wykresy i analizy" ""
+
+        system -> gus "Pobiera dane demograficzne i statystyczne" "REST API / JSON"
+        system -> usc "Importuje dane o nadanych imionach" "Plik CSV / Manual Ingest"
+    }
+
+    views {
+
+        systemContext system "SystemContext" {
+            include *
+            autoLayout lr
+        }
+
+        theme default
+
+        styles {
+
+            element "External System" {
+                background #999999
+                color #ffffff
+                border Dashed
+            }
+
+        }
+    }
+}
+
+workspace {
+
+    model {
+
+        user = person "Użytkownik" {
+            description "Analizuje popularność imion w Polsce, przegląda rankingi, mapy oraz dane demograficzne."
+        }
+
+        # Systemy zewnętrzne
+        gus = softwareSystem "GUS BDL API" {
+            description "Bank Danych Lokalnych GUS udostępniający dane o ludności, urbanizacji oraz strukturze demograficznej."
+            tags "External System"
+        }
+
+        usc = softwareSystem "Portal Dane.gov.pl / Dane USC" {
+            description "Zewnętrzny portal danych, z którego pobierany jest oficjalny wykaz imion pierwszych nadanych dzieciom w Polsce (pliki CSV publikowane przez Ministerstwo Cyfryzacji)."
+            tags "External System"
+        }
+
+        # Nasz system rozbity na kontenery (Containers)
+        system = softwareSystem "Trendy Imion w Polsce" {
+            
+            frontend = container "Frontend Application" {
+                description "Aplikacja webowa serwująca interfejs użytkownika, mapy i wykresy statystyczne."
+                technology "HTML, JavaScript, Leaflet, Chart.js"
+                tags "Web Browser"
+            }
+
+            backend = container "Backend API" {
+                description "Udostępnia endpointy REST API, realizuje logikę biznesową oraz uruchamia harmonogram synchronizacji danych."
+                technology "Python / FastAPI / APScheduler"
+            }
+
+            database = container "Database" {
+                description "Przechowuje ustrukturyzowane dane o imionach, ludności oraz wskaźnikach demograficznych."
+                technology "PostgreSQL"
+                tags "Database"
+            }
+
+            ingestion = container "Data Ingestion Scripts" {
+                description "Skrypty uruchamiane do pobierania danych demograficznych oraz parsowania plików CSV."
+                technology "Python"
+            }
+        }
+
+        # Relacje między użytkownikiem a kontenerami
+        user -> frontend "Przegląda rankingi, mapy i analizuje wykresy" ""
+        
+        # Relacje wewnątrz systemu (między kontenerami)
+        frontend -> backend "Wykonuje zapytania o dane (API requests)" "JSON / HTTP"
+        backend -> database "Odpytuje i pobiera dane statystyczne" "SQL"
+        ingestion -> database "Zapisuje sparsowane i przetworzone dane" "SQL"
+
+        # Relacje kontenerów z systemami zewnętrznymi
+        ingestion -> gus "Pobiera dane demograficzne" "JSON / HTTPS"
+        ingestion -> usc "Importuje dane z pobranych plików źródłowych" "Plik CSV / Manual"
+    }
+
+    views {
+
+        systemContext system "SystemContext" {
+            include *
+            autoLayout lr
+        }
+
+        # Nowy widok: Diagram Kontenerów dla Twojego systemu
+        container system "ContainerContext" {
+            include *
+            autoLayout lr
+        }
+
+        theme default
+
+        styles {
+
+            element "External System" {
+                background #999999
+                color #ffffff
+                border Dashed
+            }
+
+            element "Web Browser" {
+                shape WebBrowser
+            }
+
+            element "Database" {
+                shape Cylinder
+            }
+        }
+    }
+}
