@@ -10,19 +10,26 @@ url_lud = "https://bdl.stat.gov.pl/api/v1/data/by-variable/72305"
 params_ludnosc = {
     "unit-level": 5,
     "year": 2024,
-    "page-size": 20,
+    "page-size": 100,
     "format": "json"
 }
 
 params_urbanizacja = {
     "unit-level": 5,
     "year": 2024,
-    "page-size": 20,
+    "page-size": 100,
     "format": "json"
 }
 
-url_urbanizacja = "https://bdl.stat.gov.pl/api/v1/data/by-variable/1725015"
+param_wiek = {
+    "unit-level": 5,
+    "year": 2024,
+    "page-size": 100,
+    "format": "json" 
+}
 
+url_urbanizacja = "https://bdl.stat.gov.pl/api/v1/data/by-variable/1725015"
+url_wiek = "https://bdl.stat.gov.pl/api/v1/data/by-variable/746289"
 
 teryt_pos = [2, 3, 7, 8]
 
@@ -92,6 +99,39 @@ try:
         params_urbanizacja = {}
 
     print("Wskaźnik urbanizacji załadowany do PostgreSQL")
+
+    while url_wiek:
+        response = requests.get(url_wiek, params=param_wiek)
+        time.sleep(0.5)
+        response.raise_for_status()
+        data = response.json()
+
+        if "results" not in data:
+            break
+
+        for res in data["results"]:
+            clean_id = "".join([res["id"][i] for i in teryt_pos])
+
+            existing = (
+                db.query(GUSRecord)
+                .filter_by(
+                    id_powiat=str(clean_id),
+                    rok=int(res["values"][0]["year"])
+                )
+                .first()
+            )
+
+            if existing:
+                existing.wiek = float(
+                    res["values"][0]["val"]
+                )
+
+        db.commit()
+
+        url_wiek = data.get("links", {}).get("next")
+        param_wiek = {}
+
+    print("Wiek załadowany do PostgreSQL")
 
 except Exception as e:
     print(f"Wystąpił błąd: {e}")

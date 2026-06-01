@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trendy imion w Polsce</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', Arial, sans-serif; background: #f0f4f8; color: #1e293b; }
+
+        header {
+            background: linear-gradient(135deg, #1a2f4e 0%, #2471a8 100%);
+            color: white; padding: 26px 20px; text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+
+        nav { background: #1e2d3d; display: flex; padding: 0 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+        nav button {
+            color: rgba(255,255,255,0.7); background: none; border: none;
+            border-bottom: 3px solid transparent;
+            padding: 15px 28px; cursor: pointer; font-size: 14px;
+            font-weight: 500; letter-spacing: 0.2px; font-family: inherit;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        nav button:hover { color: white; border-bottom-color: rgba(255,255,255,0.3); }
+        nav button.active { color: #5bb3f0; border-bottom-color: #5bb3f0; }
+
+        .tab-content { display: none; padding: 32px 36px; max-width: 1400px; margin: 0 auto; }
+        .tab-content.active { display: block; }
+
+        .search-bar { display: flex; gap: 10px; margin-bottom: 28px; }
+        .search-bar input {
+            padding: 10px 14px; font-size: 15px; font-family: inherit;
+            border: 1.5px solid #d1dbe6; border-radius: 8px; width: 260px;
+            transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+        }
+        .search-bar input:focus {
+            border-color: #3b9de8; box-shadow: 0 0 0 3px rgba(59,157,232,0.15);
+        }
+        .search-bar select {
+            padding: 10px 14px; font-size: 15px; font-family: inherit;
+            border: 1.5px solid #d1dbe6; border-radius: 8px;
+            transition: border-color 0.15s; outline: none; cursor: pointer;
+        }
+        .search-bar select:focus { border-color: #3b9de8; box-shadow: 0 0 0 3px rgba(59,157,232,0.15); }
+        .search-bar button {
+            padding: 10px 22px;
+            background: linear-gradient(135deg, #2980b9, #1a6fa8);
+            color: white; border: none; border-radius: 8px; cursor: pointer;
+            font-size: 15px; font-family: inherit; font-weight: 600;
+            box-shadow: 0 2px 6px rgba(41,128,185,0.35);
+            transition: transform 0.12s, box-shadow 0.12s;
+        }
+        .search-bar button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(41,128,185,0.45);
+        }
+        .search-bar button:active { transform: translateY(0); }
+
+        .cards { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 28px; }
+        .card {
+            background: white; border-radius: 12px;
+            padding: 20px 26px; flex: 1; text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 6px 16px rgba(0,0,0,0.06);
+            border-top: 3px solid #3b9de8;
+        }
+        .card h3 { color: #94a3b8; font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+        .card p { font-size: 26px; font-weight: 700; color: #1e293b; }
+
+        .top3 {
+            background: white; border-radius: 8px;
+            padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        .top3 h3 { margin-bottom: 15px; color: #2c3e50; }
+        .top3 ol { padding-left: 20px; }
+        .top3 li { padding: 8px 0; border-bottom: 1px solid #eee; }
+
+        .maps-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .map-container {
+            background: white; border-radius: 12px;
+            padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 6px 16px rgba(0,0,0,0.06);
+        }
+        .map-container h3 { margin-bottom: 12px; color: #1e293b; font-size: 14px; font-weight: 600; }
+        .map-container .leaflet-map { height: 300px; border-radius: 4px; }
+
+        #error-msg { color: red; margin-bottom: 20px; display: none; }
+        .leaflet-container { background: white !important; }
+
+        .top-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .top-list {
+            background: white; border-radius: 12px;
+            padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 6px 16px rgba(0,0,0,0.06);
+        }
+        .top-list h3 { margin-bottom: 15px; color: #1e293b; font-size: 14px; font-weight: 600; }
+        .top-list ol { list-style: none; padding: 0; margin: 0; }
+        .top-list li {
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 0; border-bottom: 1px solid #eee; font-size: 14px;
+        }
+        .top-list li:last-child { border-bottom: none; }
+        .rank { color: #aaa; min-width: 22px; font-size: 13px; }
+        .imie { flex: 1; font-weight: bold; color: #2c3e50; }
+        .liczba { color: #555; }
+        .pct { color: #aaa; font-size: 12px; min-width: 38px; text-align: right; }
+        .kraj { font-size: 12px; min-width: 60px; text-align: right; color: #888; }
+        .kraj .up { color: #27ae60; }
+        .kraj .down { color: #e74c3c; }
+
+        .extra-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .panel {
+            background: white; border-radius: 12px;
+            padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 6px 16px rgba(0,0,0,0.06);
+        }
+        .panel h3 { margin-bottom: 15px; color: #1e293b; font-size: 14px; font-weight: 600; }
+        .char-list { list-style: none; padding: 0; margin: 0; }
+        .char-list li {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px;
+        }
+        .char-list li:last-child { border-bottom: none; }
+        .char-bar-wrap { flex: 1; background: #f0f0f0; border-radius: 4px; height: 8px; }
+        .char-bar { background: #2980b9; border-radius: 4px; height: 8px; }
+        .char-pct { font-size: 12px; color: #666; min-width: 42px; text-align: right; }
+
+        .section-title {
+            font-size: 15px; font-weight: 700; color: #1e293b;
+            margin: 30px 0 16px; padding: 0 0 0 13px;
+            border-left: 4px solid #3b9de8; letter-spacing: 0.1px;
+        }
+        .compare-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+        .compare-label {
+            font-size: 13px; font-weight: bold; margin-bottom: 8px; padding: 4px 8px;
+            border-radius: 4px; display: inline-block;
+        }
+        .label-blue  { background: #d6eaf8; color: #2980b9; }
+        .label-green { background: #d5f5e3; color: #27ae60; }
+        .label-red   { background: #fadbd8; color: #e74c3c; }
+        .label-teal  { background: #d1f2eb; color: #1abc9c; }
+        .ranking-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .ranking-table th {
+            background: #f8fafc; padding: 11px 14px; text-align: left;
+            border-bottom: 2px solid #e2e8f0; color: #475569;
+            font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        .ranking-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+        .ranking-table tr:hover td { background: #f8fafc; }
+        .t3-loading { text-align: center; padding: 60px; color: #888; font-size: 16px; }
+
+        /* Top 3 karty */
+        .top3-section { margin-bottom: 25px; }
+        .top3-section h3 { margin-bottom: 12px; color: #2c3e50; }
+        .top3-cards { display: flex; gap: 14px; flex-wrap: wrap; }
+        .top3-card {
+            background: white; border-radius: 10px; padding: 14px 18px;
+            box-shadow: 0 2px 6px rgba(0,0,0,.1); flex: 1; min-width: 200px;
+            display: flex; align-items: center; gap: 14px;
+        }
+        .top3-rank {
+            width: 38px; height: 38px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px; font-weight: bold; flex-shrink: 0;
+        }
+        .top3-rank.gold   { background: #fef3c7; color: #d97706; }
+        .top3-rank.silver { background: #f1f5f9; color: #64748b; }
+        .top3-rank.bronze { background: #fef2ec; color: #b5622f; }
+        .top3-info { flex: 1; min-width: 0; }
+        .top3-info .pow { font-weight: bold; color: #2c3e50; font-size: 15px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .top3-info .woj { font-size: 12px; color: #999; margin-top: 2px; }
+        .top3-count { text-align: right; flex-shrink: 0; }
+        .top3-count .num { font-size: 18px; font-weight: bold; color: #2c3e50; }
+        .top3-count .lbl { font-size: 11px; color: #aaa; }
+
+        /* Legenda / podpowiedzi */
+        .legend-row {
+            grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 14px;
+            font-size: 12px; color: #999; padding: 2px 0 10px;
+        }
+        .legend-row span { display: flex; align-items: center; gap: 5px; }
+        .lchip {
+            display: inline-block; padding: 1px 6px; border-radius: 3px;
+            font-size: 11px; font-weight: bold; background: #f0f0f0; color: #666;
+        }
+        .lchip.up { background: #e8f5e9; color: #27ae60; }
+        .lchip.dn { background: #fdecea; color: #e74c3c; }
+        .hint-box {
+            font-size: 12px; color: #888; background: #f9f9f9;
+            border-left: 3px solid #d5e8f7; padding: 7px 10px;
+            border-radius: 0 4px 4px 0; margin-bottom: 12px; line-height: 1.6;
+        }
+        .t3-legend { background: white; padding: 8px 10px; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,.25); min-width: 170px; font-size: 11px; white-space: nowrap; }
+        .ranking-table th[data-col] { cursor: pointer; user-select: none; white-space: nowrap; }
+        .ranking-table th[data-col]:hover { background: #e9ecef; }
+        .sort-icon { color: #aaa; font-size: 11px; margin-left: 3px; }
+    </style>
+</head>
+<body>
+
+<header><h1>Trendy imion w Polsce</h1></header>
+
+<nav>
+    <button class="active" onclick="showTab('tab1', this)">Statystyki imienia</button>
+    <button onclick="showTab('tab2', this)">Statystyki regionalne</button>
+    <button onclick="showTab('tab3', this)">Analiza wskaźników GUS</button>
+</nav>
+
+<div id="tab1" class="tab-content active">
+    <div class="search-bar">
+        <input type="text" id="imie-input" placeholder="Wpisz imię..."/>
+        <button onclick="szukaj()">Szukaj</button>
+    </div>
+
+    <p id="error-msg">Nie znaleziono imienia.</p>
+
+    <div class="cards">
+        <div class="card"><h3>Łączna liczba w Polsce</h3><p id="stat-total">—</p></div>
+        <div class="card"><h3>Liczba powiatów</h3><p id="stat-powiaty">—</p></div>
+        <div class="card"><h3>Liczba województw</h3><p id="stat-wojewodztwa">—</p></div>
+        <div class="card"><h3>Śr. wskaźnik urbanizacji</h3><p id="stat-urban">—</p><p id="stat-urban-sub" style="font-size:13px;color:#888;margin-top:4px"></p></div>
+        <div class="card"><h3>Podział płci</h3><p id="stat-plec">—</p></div>
+    </div>
+
+    <div class="top3-section">
+        <h3>Top 3 powiaty</h3>
+        <div class="top3-cards" id="top3-cards">
+            <p style="color:#aaa;font-size:14px">—</p>
+        </div>
+    </div>
+
+    <div class="maps-grid">
+        <div class="map-container">
+            <h3>Powiaty — liczba wystąpień</h3>
+            <div id="map-pow-liczba" class="leaflet-map"></div>
+        </div>
+        <div class="map-container">
+            <h3>Powiaty — na 100k mieszkańców</h3>
+            <div id="map-pow-procent" class="leaflet-map"></div>
+        </div>
+        <div class="map-container">
+            <h3>Województwa — liczba wystąpień</h3>
+            <div id="map-woj-liczba" class="leaflet-map"></div>
+        </div>
+        <div class="map-container">
+            <h3>Województwa — na 100k mieszkańców</h3>
+            <div id="map-woj-procent" class="leaflet-map"></div>
+        </div>
+    </div>
+</div>
+
+<div id="tab2" class="tab-content">
+    <div class="search-bar">
+        <select id="region-level" onchange="togglePowiatSelect()">
+            <option value="woj">Województwo</option>
+            <option value="powiat">Powiat</option>
+        </select>
+        <select id="region-woj" onchange="updatePowiaty()">
+            <option value="">— wybierz województwo —</option>
+        </select>
+        <select id="region-pow" style="display:none">
+            <option value="">— wybierz powiat —</option>
+        </select>
+        <button onclick="szukajRegion()">Pokaż</button>
+    </div>
+
+    <div id="region-cards" class="cards" style="display:none">
+        <div class="card"><h3>Łączna liczba nadań</h3><p id="r-total">—</p></div>
+        <div class="card"><h3>Unikalne imiona</h3><p id="r-unique">—</p></div>
+        <div class="card">
+            <h3>Różnorodność</h3>
+            <p id="r-diversity">—</p>
+            <p style="font-size:12px;color:#888;margin-top:4px;font-weight:normal">imion na 1000 nadań</p>
+        </div>
+    </div>
+
+    <div id="region-tops" class="top-grid" style="display:none">
+        <div class="legend-row">
+            <span><span class="lchip">%</span> udział w nadaniach w regionie</span>
+            <span><span class="lchip">#5</span> miejsce w Polsce ogółem</span>
+            <span><span class="lchip up">↑3</span> wyżej niż w Polsce</span>
+            <span><span class="lchip dn">↓2</span> niżej niż w Polsce</span>
+        </div>
+        <div class="top-list">
+            <h3>Top 5 ogólnie</h3>
+            <ol id="r-top-all"></ol>
+        </div>
+        <div class="top-list">
+            <h3>Top 5 imion żeńskich</h3>
+            <ol id="r-top-k"></ol>
+        </div>
+        <div class="top-list">
+            <h3>Top 5 imion męskich</h3>
+            <ol id="r-top-m"></ol>
+        </div>
+    </div>
+
+    <div id="region-extra" class="extra-grid" style="display:none">
+        <div class="panel">
+            <h3>Top 10 imion — wykres</h3>
+            <canvas id="region-chart"></canvas>
+        </div>
+        <div class="panel">
+            <h3>Charakterystyczne dla regionu</h3>
+            <div class="hint-box">
+                Imię jest tu wyjątkowo popularne — duży odsetek <strong>wszystkich polskich nadań</strong>
+                tego imienia pochodzi właśnie z tego regionu.<br>
+                Np. 45% oznacza, że 45 na 100 dzieci w Polsce noszących to imię urodziło się tutaj.
+                Uwzględniane tylko imiona z&nbsp;min. 4 nadaniami.
+            </div>
+            <ul class="char-list" id="r-characteristic"></ul>
+        </div>
+    </div>
+</div>
+
+<div id="tab3" class="tab-content">
+    <div id="t3-loading" class="t3-loading">Ładowanie danych GUS...</div>
+    <div id="t3-body" style="display:none">
+
+        <h2 class="section-title">Wskaźniki przestrzenne powiatów</h2>
+        <div class="maps-grid">
+            <div class="map-container">
+                <h3>Wskaźnik urbanizacji (%)</h3>
+                <div id="map-t3-urban" class="leaflet-map"></div>
+            </div>
+            <div class="map-container">
+                <h3>Mediana wieku ludności (lata)</h3>
+                <div id="map-t3-wiek" class="leaflet-map"></div>
+            </div>
+        </div>
+
+        <h2 class="section-title">Korelacja wskaźników z różnorodnością imion</h2>
+        <p style="font-size:13px;color:#888;margin-bottom:15px">Każdy punkt to jeden powiat. Oś Y: liczba unikalnych imion na 1000 nadań.</p>
+        <div class="maps-grid">
+            <div class="map-container">
+                <h3>Urbanizacja a różnorodność imion</h3>
+                <canvas id="scatter-urban"></canvas>
+            </div>
+            <div class="map-container">
+                <h3>Mediana wieku a różnorodność imion</h3>
+                <canvas id="scatter-wiek"></canvas>
+            </div>
+        </div>
+
+        <h2 class="section-title">Imiona a charakter regionu</h2>
+        <p style="font-size:13px;color:#888;margin-bottom:15px">Powiaty o skrajnych wartościach wskaźnika — górny i dolny kwartyl.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+            <div class="panel">
+                <div class="compare-label label-blue" style="margin-bottom:12px">Wysoka urbanizacja (Q4)</div>
+                <div style="font-size:11px;color:#999;margin-bottom:6px">Najpopularniejsze</div>
+                <ol class="top-list" id="urban-top"></ol>
+                <div style="font-size:11px;color:#999;margin:12px 0 6px">Najrzadsze</div>
+                <ol class="top-list" id="urban-bottom"></ol>
+            </div>
+            <div class="panel">
+                <div class="compare-label label-green" style="margin-bottom:12px">Niska urbanizacja (Q1)</div>
+                <div style="font-size:11px;color:#999;margin-bottom:6px">Najpopularniejsze</div>
+                <ol class="top-list" id="rural-top"></ol>
+                <div style="font-size:11px;color:#999;margin:12px 0 6px">Najrzadsze</div>
+                <ol class="top-list" id="rural-bottom"></ol>
+            </div>
+            <div class="panel">
+                <div class="compare-label label-red" style="margin-bottom:12px">Starsze regiony (Q4)</div>
+                <div style="font-size:11px;color:#999;margin-bottom:6px">Najpopularniejsze</div>
+                <ol class="top-list" id="old-top"></ol>
+                <div style="font-size:11px;color:#999;margin:12px 0 6px">Najrzadsze</div>
+                <ol class="top-list" id="old-bottom"></ol>
+            </div>
+            <div class="panel">
+                <div class="compare-label label-teal" style="margin-bottom:12px">Młodsze regiony (Q1)</div>
+                <div style="font-size:11px;color:#999;margin-bottom:6px">Najpopularniejsze</div>
+                <ol class="top-list" id="young-top"></ol>
+                <div style="font-size:11px;color:#999;margin:12px 0 6px">Najrzadsze</div>
+                <ol class="top-list" id="young-bottom"></ol>
+            </div>
+        </div>
+
+        <h2 class="section-title">Ranking województw</h2>
+        <div class="panel">
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th data-col="nazwa" onclick="sortTable('nazwa')">Województwo <span class="sort-icon">⇅</span></th>
+                        <th data-col="avg_urbanizacja" onclick="sortTable('avg_urbanizacja')">Śr. urbanizacja <span class="sort-icon">▼</span></th>
+                        <th data-col="avg_wiek" onclick="sortTable('avg_wiek')">Śr. mediana wieku <span class="sort-icon">⇅</span></th>
+                        <th data-col="ludnosc" onclick="sortTable('ludnosc')">Ludność <span class="sort-icon">⇅</span></th>
+                        <th data-col="diversity" onclick="sortTable('diversity')">Różnorodność imion <span class="sort-icon">⇅</span></th>
+                        <th>Top ogólnie</th>
+                        <th>Top ♀</th>
+                        <th>Top ♂</th>
+                        <th>Najrzadsze</th>
+                    </tr>
+                </thead>
+                <tbody id="woj-ranking-body"></tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const API = "http://localhost:8000";
+    const POLAND = [52.0, 19.5];
+    const ZOOM = 5;
+
+    let maps = {};
+    let geoPowiaty = null;
+    let geoWoj = null;
+    let allRegions = null;
+    let regionChart = null;
+
+    async function loadGeoJSON() {
+        if (!geoPowiaty) {
+            const r1 = await fetch('powiaty_wgs84.json');
+            geoPowiaty = await r1.json();
+        }
+        if (!geoWoj) {
+            const r2 = await fetch('wojewodztwa_wgs84.json');
+            geoWoj = await r2.json();
+        }
+    }
+
+    function getColor(value, max) {
+        if (!value) return '#b0b0b0';
+        const t = value / max;
+        const r = Math.round(255 - t * 180);
+        const g = Math.round(255 - t * 180);
+        const b = 255;
+        return `rgb(${r},${g},${b})`;
+    }
+
+    function initMap(id) {
+        if (maps[id]) { maps[id].remove(); }
+        const el = document.getElementById(id);
+        el.style.height = '300px';
+        maps[id] = L.map(id, {
+            zoomControl: false,
+            attributionControl: false,
+            dragging: false,
+            scrollWheelZoom: false,
+            doubleClickZoom: false,
+            touchZoom: false
+        });
+        return maps[id];
+    }
+
+
+    function renderChoropleth(mapId, geojson, dataMap, keyFn, tooltipFn) {
+        const m = initMap(mapId);
+        const values = Object.values(dataMap).filter(v => v > 0);
+        const max = Math.max(...values);
+
+        const layer = L.geoJSON(geojson, {
+            style: feature => {
+                const key = keyFn(feature);
+                const val = dataMap[key] || 0;
+                return {
+                    fillColor: getColor(val, max),
+                    weight: 0.5,
+                    color: '#555',
+                    fillOpacity: 0.75
+                };
+            },
+            onEachFeature: (feature, layer) => {
+                const key = keyFn(feature);
+                const val = dataMap[key] || 0;
+                const tip = tooltipFn
+                    ? tooltipFn(feature, key, val)
+                    : `${feature.properties.JPT_NAZWA_}<br><b>${val.toLocaleString('pl-PL')}</b>`;
+                layer.bindTooltip(tip);
+            }
+        }).addTo(m);
+
+        m.fitBounds(layer.getBounds());
+        setTimeout(() => m.invalidateSize(), 50);
+    }
+
+
+    function showTab(id, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+        if (id === 'tab2') loadRegions();
+        if (id === 'tab3') loadTab3();
+    }
+
+    function getColorBlue(t) {
+        const v = Math.round(255 - t * 200);
+        return `rgb(${v},${v},255)`;
+    }
+    function getColorRed(t) {
+        const v = Math.round(220 - t * 220);
+        return `rgb(255,${v},${v})`;
+    }
+
+    function renderT3Map(mapId, geojson, dataMap, keyFn, tooltipFn, colorFn, unit) {
+        if (maps[mapId]) { maps[mapId].remove(); delete maps[mapId]; }
+        const el = document.getElementById(mapId);
+        el.style.height = '400px';
+        maps[mapId] = L.map(mapId, {
+            zoomControl: false, attributionControl: false,
+            dragging: false, scrollWheelZoom: false,
+            doubleClickZoom: false, touchZoom: false
+        });
+        const m = maps[mapId];
+
+        const vals = Object.values(dataMap).filter(v => v != null && !isNaN(v));
+        // Normalizacja kwantylowa: każdy powiat kolorowany wg percentyla w rankingu,
+        // nie wartości bezwzględnej — eliminuje problem "wszystko jednego koloru"
+        // gdy wartości skupiają się w wąskim przedziale (np. mediana wieku 36–49 lat)
+        const sorted = [...vals].sort((a, b) => a - b);
+        const min = sorted[0];
+        const max = sorted[sorted.length - 1];
+        const median = sorted[Math.floor(sorted.length / 2)];
+        function quantileT(val) {
+            if (val == null || isNaN(val)) return null;
+            const idx = sorted.findIndex(v => v >= val);
+            return idx < 0 ? 1 : idx / (sorted.length - 1);
+        }
+        const cfn = colorFn || getColorBlue;
+        const u = unit || '';
+
+        const layer = L.geoJSON(geojson, {
+            style: feature => {
+                const key = keyFn(feature);
+                const val = dataMap[key];
+                const t = quantileT(val);
+                return {
+                    fillColor: t != null ? cfn(t) : '#b0b0b0',
+                    weight: 0.5, color: '#555', fillOpacity: 0.8
+                };
+            },
+            onEachFeature: (feature, lyr) => {
+                const key = keyFn(feature);
+                const val = dataMap[key];
+                const tip = tooltipFn
+                    ? tooltipFn(feature, key, val)
+                    : `${feature.properties.JPT_NAZWA_}<br><b>${val ?? 'Brak danych'}</b>`;
+                lyr.bindTooltip(tip);
+            }
+        }).addTo(m);
+
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) m.fitBounds(bounds, { padding: [10, 10] });
+
+        // Legenda
+        const legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function() {
+            const div = L.DomUtil.create('div', 't3-legend');
+            const steps = 7;
+            const swatches = Array.from({ length: steps }, (_, i) => {
+                const t = i / (steps - 1);
+                return `<div style="flex:1;height:12px;background:${cfn(t)}"></div>`;
+            }).join('');
+            div.innerHTML = `
+                <div style="display:flex;border:1px solid #ccc;border-radius:3px;overflow:hidden;margin-bottom:3px">${swatches}</div>
+                <div style="display:flex;justify-content:space-between;color:#444">
+                    <span>${min.toFixed(1)}${u}</span>
+                    <span style="color:#888">${median.toFixed(1)}${u}</span>
+                    <span>${max.toFixed(1)}${u}</span>
+                </div>
+                <div style="font-size:10px;color:#bbb;text-align:center;margin-top:2px">percentyle</div>`;
+            return div;
+        };
+        legend.addTo(m);
+    }
+
+    // --- Zakładka 3 ---
+    let tab3Loaded = false;
+    let tab3Data = null;
+    let scatterUrbanChart = null;
+    let scatterWiekChart = null;
+
+    async function prefetchTab3() {
+        try {
+            const [data] = await Promise.all([
+                fetch(`${API}/gus/analysis`).then(r => r.json()),
+                loadGeoJSON()
+            ]);
+            tab3Data = data;
+        } catch (e) {}
+    }
+    let wojRankingData = [];
+    let sortCol = 'avg_urbanizacja';
+    let sortAsc = false;
+
+    function renderWojTable() {
+        const sorted = [...wojRankingData].sort((a, b) => {
+            const va = a[sortCol], vb = b[sortCol];
+            if (typeof va === 'string') return sortAsc ? va.localeCompare(vb, 'pl') : vb.localeCompare(va, 'pl');
+            return sortAsc ? va - vb : vb - va;
+        });
+        document.getElementById('woj-ranking-body').innerHTML = sorted.map((w, i) => `
+            <tr>
+                <td style="color:#aaa">${i + 1}</td>
+                <td><b>${w.nazwa}</b></td>
+                <td>${w.avg_urbanizacja}%</td>
+                <td>${w.avg_wiek} lat</td>
+                <td>${w.ludnosc.toLocaleString('pl-PL')}</td>
+                <td>${w.diversity} / 1000</td>
+                <td><b>${w.top_imie}</b></td>
+                <td style="color:#c0392b">${w.top_imie_k}</td>
+                <td style="color:#2980b9">${w.top_imie_m}</td>
+                <td style="color:#aaa;font-size:13px">${w.bottom_imie}</td>
+            </tr>`).join('');
+
+        document.querySelectorAll('.ranking-table th[data-col]').forEach(th => {
+            const col = th.dataset.col;
+            th.querySelector('.sort-icon').textContent = col === sortCol ? (sortAsc ? '▲' : '▼') : '⇅';
+        });
+    }
+
+    function sortTable(col) {
+        if (sortCol === col) sortAsc = !sortAsc;
+        else { sortCol = col; sortAsc = false; }
+        renderWojTable();
+    }
+
+    async function loadTab3() {
+        if (tab3Loaded) return;
+
+        if (!tab3Data) {
+            const [fetched] = await Promise.all([
+                fetch(`${API}/gus/analysis`).then(r => r.json()),
+                loadGeoJSON()
+            ]);
+            tab3Data = fetched;
+        }
+
+        tab3Loaded = true;
+        const data = tab3Data;
+
+        // Pokaż kontener PRZED inicjalizacją map — Leaflet musi widzieć wymiary elementu
+        document.getElementById('t3-loading').style.display = 'none';
+        document.getElementById('t3-body').style.display = 'block';
+
+        // Mapy
+        renderT3Map(
+            'map-t3-urban', geoPowiaty, data.urban_map,
+            f => f.properties.JPT_KOD_JE,
+            (f, k, v) => `<b>${f.properties.JPT_NAZWA_}</b><br>Urbanizacja: <b>${v != null ? v + '%' : 'brak'}</b>`,
+            getColorBlue, '%'
+        );
+        renderT3Map(
+            'map-t3-wiek', geoPowiaty, data.age_map,
+            f => f.properties.JPT_KOD_JE,
+            (f, k, v) => `<b>${f.properties.JPT_NAZWA_}</b><br>Mediana wieku: <b>${v != null ? v + ' lat' : 'brak'}</b>`,
+            getColorRed, ' lat'
+        );
+
+        // Scatter: urbanizacja vs różnorodność
+        if (scatterUrbanChart) scatterUrbanChart.destroy();
+        scatterUrbanChart = new Chart(
+            document.getElementById('scatter-urban').getContext('2d'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Powiaty',
+                    data: data.scatter_data.map(d => ({ x: d.urbanizacja, y: d.diversity, nazwa: d.nazwa })),
+                    backgroundColor: 'rgba(41, 128, 185, 0.55)',
+                    pointRadius: 4, pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.raw.nazwa}: urb. ${ctx.raw.x}%, różn. ${ctx.raw.y}`
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Wskaźnik urbanizacji (%)' } },
+                    y: { title: { display: true, text: 'Imion na 1000 nadań' }, beginAtZero: false }
+                }
+            }
+        });
+
+        // Scatter: wiek vs różnorodność
+        if (scatterWiekChart) scatterWiekChart.destroy();
+        scatterWiekChart = new Chart(
+            document.getElementById('scatter-wiek').getContext('2d'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Powiaty',
+                    data: data.scatter_data.map(d => ({ x: d.wiek, y: d.diversity, nazwa: d.nazwa })),
+                    backgroundColor: 'rgba(231, 76, 60, 0.55)',
+                    pointRadius: 4, pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.raw.nazwa}: wiek ${ctx.raw.x} lat, różn. ${ctx.raw.y}`
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Mediana wieku (lata)' }, beginAtZero: false },
+                    y: { title: { display: true, text: 'Imion na 1000 nadań' }, beginAtZero: false }
+                }
+            }
+        });
+
+        // Listy porównawcze
+        function renderCompareList(elId, items) {
+            document.getElementById(elId).innerHTML = items.map((item, i) => `
+                <li>
+                    <span class="rank">${i + 1}.</span>
+                    <span class="imie">${item.imie}</span>
+                    <span class="liczba">${item.liczba.toLocaleString('pl-PL')}</span>
+                </li>`).join('');
+        }
+
+        renderCompareList('urban-top',    data.urban_top);
+        renderCompareList('urban-bottom', data.urban_bottom);
+        renderCompareList('rural-top',    data.rural_top);
+        renderCompareList('rural-bottom', data.rural_bottom);
+        renderCompareList('old-top',      data.old_top);
+        renderCompareList('old-bottom',   data.old_bottom);
+        renderCompareList('young-top',    data.young_top);
+        renderCompareList('young-bottom', data.young_bottom);
+
+        // Ranking województw — zapisujemy dane i renderujemy przez sortTable
+        wojRankingData = data.woj_ranking;
+        renderWojTable();
+
+    }
+
+    async function loadRegions() {
+        if (allRegions) return;
+        const r = await fetch(`${API}/names/regions`);
+        allRegions = await r.json();
+
+        const wojSel = document.getElementById('region-woj');
+        Object.entries(allRegions)
+            .sort((a, b) => a[1].nazwa.localeCompare(b[1].nazwa, 'pl'))
+            .forEach(([kod, data]) => {
+                const opt = document.createElement('option');
+                opt.value = kod;
+                opt.textContent = data.nazwa;
+                wojSel.appendChild(opt);
+            });
+    }
+
+    function togglePowiatSelect() {
+        const isPowiat = document.getElementById('region-level').value === 'powiat';
+        document.getElementById('region-pow').style.display = isPowiat ? '' : 'none';
+        if (isPowiat) updatePowiaty();
+    }
+
+    function updatePowiaty() {
+        const woj = document.getElementById('region-woj').value;
+        const powSel = document.getElementById('region-pow');
+        powSel.innerHTML = '<option value="">— wybierz powiat —</option>';
+        if (!woj || !allRegions?.[woj]) return;
+        allRegions[woj].powiaty.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.nazwa;
+            powSel.appendChild(opt);
+        });
+    }
+
+    async function szukajRegion() {
+        const level = document.getElementById('region-level').value;
+        const woj = document.getElementById('region-woj').value;
+        const pow = document.getElementById('region-pow').value;
+        const id = level === 'powiat' ? pow : woj;
+        if (!id) return;
+
+        const data = await fetch(`${API}/names/regional-top?level=${level}&id=${encodeURIComponent(id)}&limit=5`).then(r => r.json());
+
+        document.getElementById('r-total').textContent = data.total_births.toLocaleString('pl-PL');
+        document.getElementById('r-unique').textContent = data.unique_names.toLocaleString('pl-PL');
+        document.getElementById('r-diversity').textContent = data.diversity_per_1000;
+
+        function renderList(olId, items) {
+            document.getElementById(olId).innerHTML = items.map((item, i) => {
+                const pct = data.total_births > 0 ? (item.liczba / data.total_births * 100).toFixed(1) : 0;
+                let krajHtml = '';
+                if (item.rank_krajowy != null) {
+                    const diff = item.diff ?? 0;
+                    const arrow = diff < 0
+                        ? `<span class="up">↑${Math.abs(diff)}</span>`
+                        : diff > 0
+                            ? `<span class="down">↓${diff}</span>`
+                            : '↔';
+                    krajHtml = `<span class="kraj">#${item.rank_krajowy} ${arrow}</span>`;
+                }
+                return `<li>
+                    <span class="rank">${i + 1}.</span>
+                    <span class="imie">${item.imie}</span>
+                    <span class="liczba">${item.liczba.toLocaleString('pl-PL')}</span>
+                    <span class="pct">${pct}%</span>
+                    ${krajHtml}
+                </li>`;
+            }).join('');
+        }
+
+        renderList('r-top-all', data.top_all);
+        renderList('r-top-k', data.top_kobiety);
+        renderList('r-top-m', data.top_mezczyzni);
+
+        // Wykres
+        if (regionChart) regionChart.destroy();
+        regionChart = new Chart(
+            document.getElementById('region-chart').getContext('2d'),
+            {
+                type: 'bar',
+                data: {
+                    labels: data.chart_data.map(d => d.imie),
+                    datasets: [
+                        {
+                            label: 'Kobiety',
+                            data: data.chart_data.map(d => d.k),
+                            backgroundColor: '#e91e9380',
+                            borderColor: '#e91e93',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Mężczyźni',
+                            data: data.chart_data.map(d => d.m),
+                            backgroundColor: '#2196f380',
+                            borderColor: '#2196f3',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+                }
+            }
+        );
+
+        // Imiona charakterystyczne
+        document.getElementById('r-characteristic').innerHTML =
+            data.characteristic.length
+                ? data.characteristic.map(c => `
+                    <li>
+                        <span class="imie" style="min-width:90px">${c.imie}</span>
+                        <span class="char-bar-wrap"><span class="char-bar" style="width:${Math.min(c.pct_krajowe, 100)}%"></span></span>
+                        <span class="char-pct">${c.pct_krajowe}%</span>
+                    </li>`).join('')
+                : '<li style="color:#aaa;font-size:13px">Brak imion charakterystycznych dla tego regionu</li>';
+
+        document.getElementById('region-cards').style.display = 'flex';
+        document.getElementById('region-tops').style.display = 'grid';
+        document.getElementById('region-extra').style.display = 'grid';
+    }
+
+    async function szukaj() {
+        const imie = document.getElementById('imie-input').value.trim();
+        const errorMsg = document.getElementById('error-msg');
+        if (!imie) return;
+
+        errorMsg.style.display = 'none';
+
+        const statsUrl = `${API}/names/stats?imie=${encodeURIComponent(imie)}`;
+        const searchUrl = `${API}/names/search?imie=${encodeURIComponent(imie)}`;
+
+        const [stats, records] = await Promise.all([
+            fetch(statsUrl).then(r => r.json()),
+            fetch(searchUrl).then(r => r.json()),
+            loadGeoJSON()
+        ]);
+
+        if (stats.error || records.length === 0) {
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        const total = stats.total;
+
+        document.getElementById('stat-total').textContent = total.toLocaleString('pl-PL');
+        document.getElementById('stat-powiaty').textContent = stats.liczba_powiatow;
+        document.getElementById('stat-wojewodztwa').textContent = stats.liczba_wojewodztw ?? '—';
+
+        const avgUrb = stats.avg_wskaznik_urbanizacji;
+        const krajUrb = stats.krajowa_srednia_urbanizacji;
+        document.getElementById('stat-urban').textContent = avgUrb ? avgUrb + '%' : '—';
+        if (avgUrb && krajUrb) {
+            const diff = (avgUrb - krajUrb).toFixed(1);
+            const up = diff > 0;
+            document.getElementById('stat-urban-sub').innerHTML =
+                `<span style="color:${up ? '#27ae60' : '#e74c3c'}">${up ? '↑' : '↓'} ${Math.abs(diff)}%</span> vs kraj (${krajUrb}%)`;
+        }
+
+        const plecSplit = stats.plec_split || {};
+        const k = plecSplit['KOBIETA'] || 0;
+        const m = plecSplit['MĘŻCZYZNA'] || 0;
+        const plecTotal = k + m;
+        document.getElementById('stat-plec').textContent = plecTotal
+            ? `${Math.round(k/plecTotal*100)}% K / ${Math.round(m/plecTotal*100)}% M`
+            : '—';
+
+        const medalClass = ['gold', 'silver', 'bronze'];
+        const medalLabel = ['1', '2', '3'];
+        document.getElementById('top3-cards').innerHTML = stats.top3.map((r, i) => `
+            <div class="top3-card">
+                <div class="top3-rank ${medalClass[i]}">${medalLabel[i]}</div>
+                <div class="top3-info">
+                    <div class="pow">${r.powiat.charAt(0).toUpperCase() + r.powiat.slice(1).toLowerCase()}</div>
+                    <div class="woj">${r.wojewodztwo.charAt(0).toUpperCase() + r.wojewodztwo.slice(1).toLowerCase()}</div>
+                </div>
+                <div class="top3-count">
+                    <div class="num">${r.liczba.toLocaleString('pl-PL')}</div>
+                    <div class="lbl">wystąpień</div>
+                </div>
+            </div>`).join('');
+
+        // Mapy powiatów
+        const powLiczba = {};
+        const powProcent = {};
+        const powData = {};
+        records.forEach(r => {
+            powLiczba[r.id_powiat] = (powLiczba[r.id_powiat] || 0) + r.liczba_wystapien;
+            if (r.ludnosc) {
+                powProcent[r.id_powiat] = parseFloat(((powLiczba[r.id_powiat]) / r.ludnosc * 100000).toFixed(2));
+            }
+            if (!powData[r.id_powiat]) powData[r.id_powiat] = r;
+        });
+
+        // Mapy województw — klucz: pierwsze 2 cyfry id_powiat = kod województwa
+        const wojLiczba = {};
+        const wojLudnosc = {};
+        const wojRankData = {};
+        records.forEach(r => {
+            const woj = r.id_powiat.substring(0, 2);
+            wojLiczba[woj] = (wojLiczba[woj] || 0) + r.liczba_wystapien;
+            wojLudnosc[woj] = (wojLudnosc[woj] || 0) + (r.ludnosc || 0);
+            if (!wojRankData[woj]) {
+                wojRankData[woj] = { rank_all: r.rank_woj_all, rank_plec: r.rank_woj_plec, plec: r.plec };
+            }
+        });
+        const wojProcent = {};
+        Object.entries(wojLiczba).forEach(([k, v]) => {
+            if (wojLudnosc[k] > 0) {
+                wojProcent[k] = parseFloat((v / wojLudnosc[k] * 100000).toFixed(2));
+            }
+        });
+
+        const plecLabel = p => p === 'KOBIETA' ? 'kobiety' : 'mężczyźni';
+
+        const powTooltip = (feature, key) => {
+            const r = powData[key];
+            if (!r) return `<b>${feature.properties.JPT_NAZWA_}</b><br>Brak danych`;
+            const liczba = powLiczba[key] || 0;
+            const pct = total > 0 ? (liczba / total * 100).toFixed(2) : '—';
+            return [
+                `<b>${feature.properties.JPT_NAZWA_}</b>`,
+                `Liczba: <b>${liczba.toLocaleString('pl-PL')}</b>`,
+                `% udział w Polsce: <b>${pct}%</b>`,
+                r.rank_pow_all != null ? `Miejsce (ogół): <b>${r.rank_pow_all}</b>` : null,
+                r.rank_pow_plec != null ? `Miejsce (${plecLabel(r.plec)}): <b>${r.rank_pow_plec}</b>` : null,
+            ].filter(Boolean).join('<br>');
+        };
+
+        const wojTooltip = (feature, key) => {
+            const rd = wojRankData[key] || {};
+            const liczba = wojLiczba[key] || 0;
+            const pct = total > 0 ? (liczba / total * 100).toFixed(2) : '—';
+            return [
+                `<b>${feature.properties.JPT_NAZWA_}</b>`,
+                `Liczba: <b>${liczba.toLocaleString('pl-PL')}</b>`,
+                `% udział w Polsce: <b>${pct}%</b>`,
+                rd.rank_all != null ? `Miejsce (ogół): <b>${rd.rank_all}</b>` : null,
+                rd.rank_plec != null ? `Miejsce (${plecLabel(rd.plec)}): <b>${rd.rank_plec}</b>` : null,
+            ].filter(Boolean).join('<br>');
+        };
+
+        renderChoropleth('map-pow-liczba', geoPowiaty, powLiczba,
+            f => f.properties.JPT_KOD_JE, powTooltip);
+        renderChoropleth('map-pow-procent', geoPowiaty, powProcent,
+            f => f.properties.JPT_KOD_JE);
+        renderChoropleth('map-woj-liczba', geoWoj, wojLiczba,
+            f => f.properties.JPT_KOD_JE, wojTooltip);
+        renderChoropleth('map-woj-procent', geoWoj, wojProcent,
+            f => f.properties.JPT_KOD_JE);
+    }
+
+    document.getElementById('imie-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') szukaj();
+    });
+
+    // Preload danych zakładki 3 i GeoJSON w tle zaraz po załadowaniu strony
+    prefetchTab3();
+</script>
+
+</body>
+</html>

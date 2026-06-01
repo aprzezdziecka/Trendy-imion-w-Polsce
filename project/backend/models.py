@@ -28,5 +28,6 @@ class GUSRecord(Base):
     rok = Column(Integer)
     ludnosc = Column(Integer)
     wskaznik_urbanizacji = Column(Float)
+    wiek = Column(Float)
 
     __table_args__ = (UniqueConstraint('id_powiat', 'rok', name='_powiat_year_uc'),)
