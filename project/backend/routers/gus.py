@@ -14,11 +14,29 @@ def get_db():
     finally:
         db.close()
 
-@router.get("/", response_model=list[GUSRecordOut])
+@router.get(
+    "/",
+    response_model=list[GUSRecordOut],
+    summary="Lista wskaźników GUS dla powiatów",
+    description=(
+        "Zwraca dane z Banku Danych Lokalnych GUS dla każdego powiatu: "
+        "ludność, wskaźnik urbanizacji (%) oraz mediana wieku mieszkańców."
+    ),
+)
 def get_gus_data(db: Session = Depends(get_db)):
     return db.query(GUSRecord).all()
 
-@router.get("/analysis")
+@router.get(
+    "/analysis",
+    summary="Analiza korelacji wskaźników GUS z imionami",
+    description=(
+        "Złożona analiza łącząca dane GUS z danymi o imionach. Zwraca: "
+        "dane do scatter plotów (urbanizacja/wiek vs różnorodność imion), "
+        "porównanie imion w powiatach o wysokiej/niskiej urbanizacji (kwartyle Q1/Q4), "
+        "porównanie imion w regionach starszych/młodszych demograficznie, "
+        "mapy choropleth (urban_map, age_map) oraz ranking województw."
+    ),
+)
 def gus_analysis(db: Session = Depends(get_db)):
     gus_records = db.query(GUSRecord).all()
 

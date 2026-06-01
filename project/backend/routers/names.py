@@ -14,7 +14,12 @@ def get_db():
     finally:
         db.close()
 
-@router.get("/", response_model=list[NameRecordOut])
+@router.get(
+    "/",
+    response_model=list[NameRecordOut],
+    summary="Lista rekordów imion",
+    description="Zwraca surowe rekordy z bazy danych. Opcjonalne filtry: płeć (`KOBIETA`/`MĘŻCZYZNA`) i nazwa powiatu.",
+)
 def get_names(plec: str = None, powiat: str = None, limit: int = 100, db: Session = Depends(get_db)):
     q = db.query(NameRecord)
     if plec:
@@ -23,14 +28,27 @@ def get_names(plec: str = None, powiat: str = None, limit: int = 100, db: Sessio
         q = q.filter(NameRecord.powiat == powiat)
     return q.limit(limit).all()
 
-@router.get("/top", response_model=list[NameRecordOut])
+@router.get(
+    "/top",
+    response_model=list[NameRecordOut],
+    summary="Najpopularniejsze imiona w Polsce",
+    description="Zwraca `limit` najpopularniejszych imion ogółem lub z podziałem na płeć.",
+)
 def get_top_names(plec: str = None, limit: int = 10, db: Session = Depends(get_db)):
     q = db.query(NameRecord)
     if plec:
         q = q.filter(NameRecord.plec == plec)
     return q.order_by(NameRecord.liczba_wystapien.desc()).limit(limit).all()
 
-@router.get("/search")
+@router.get(
+    "/search",
+    summary="Wyszukaj imię — szczegóły dla każdego powiatu",
+    description=(
+        "Zwraca listę rekordów dla danego imienia z podziałem na powiaty. "
+        "Każdy rekord zawiera liczbę wystąpień, rangę w powiecie i województwie "
+        "(ogólną i z podziałem na płeć) oraz wskaźnik urbanizacji powiatu."
+    ),
+)
 def search_name(imie: str, plec: str = None, db: Session = Depends(get_db)):
     q = db.query(NameRecord).filter(NameRecord.imie_pierwsze == imie.upper())
     if plec:
@@ -117,7 +135,11 @@ def search_name(imie: str, plec: str = None, db: Session = Depends(get_db)):
         })
     return result
 
-@router.get("/regions")
+@router.get(
+    "/regions",
+    summary="Lista województw i powiatów",
+    description="Zwraca słownik wszystkich województw wraz z listą powiatów. Używane do budowania selektorów w UI.",
+)
 def get_regions(db: Session = Depends(get_db)):
     rows = db.query(
         NameRecord.id_powiat,
@@ -134,7 +156,15 @@ def get_regions(db: Session = Depends(get_db)):
     return result
 
 
-@router.get("/regional-top")
+@router.get(
+    "/regional-top",
+    summary="Statystyki regionalne — top imiona",
+    description=(
+        "Zwraca statystyki dla wybranego województwa (`level=woj`) lub powiatu (`level=powiat`). "
+        "Zawiera top imiona ogólne, żeńskie i męskie, wskaźnik różnorodności (imion na 1000 nadań), "
+        "imiona charakterystyczne dla regionu oraz dane do wykresu."
+    ),
+)
 def regional_top(level: str, id: str, limit: int = 5, db: Session = Depends(get_db)):
     q = db.query(
         NameRecord.imie_pierwsze,
@@ -217,7 +247,15 @@ def regional_top(level: str, id: str, limit: int = 5, db: Session = Depends(get_
     }
 
 
-@router.get("/stats")
+@router.get(
+    "/stats",
+    summary="Ogólne statystyki imienia",
+    description=(
+        "Zwraca zagregowane dane dla imienia w całej Polsce: łączna liczba nadań, "
+        "liczba powiatów i województw, podział płci, top 3 powiaty oraz "
+        "średni wskaźnik urbanizacji powiatów gdzie imię jest popularne."
+    ),
+)
 def name_stats(imie: str, plec: str = None, db: Session = Depends(get_db)):
     q = db.query(NameRecord).filter(NameRecord.imie_pierwsze == imie.upper())
     if plec:

@@ -4,7 +4,15 @@ from .database import engine
 from .models import Base
 from .routers import gus, names
 
-app = FastAPI()
+app = FastAPI(
+    title="Trendy imion w Polsce API",
+    description=(
+        "API udostępniające dane o imionach nadawanych dzieciom w Polsce w 2024 roku "
+        "z podziałem na powiaty i województwa. "
+        "Dane pochodzą z dwóch źródeł: pliku CSV Ministerstwa Cyfryzacji (USC) "
+        "oraz REST API Banku Danych Lokalnych GUS (BDL)."
+    ),
+)
 
 app.add_middleware(
     CORSMiddleware,
