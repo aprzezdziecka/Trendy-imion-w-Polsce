@@ -1,141 +1,115 @@
 import requests
+import time
 from backend.database import SessionLocal, engine
 from backend.models import Base, GUSRecord
-import time
 
-Base.metadata.create_all(bind=engine)
 
-url_lud = "https://bdl.stat.gov.pl/api/v1/data/by-variable/72305"
+def run():
+    Base.metadata.create_all(bind=engine)
 
-params_ludnosc = {
-    "unit-level": 5,
-    "year": 2024,
-    "page-size": 100,
-    "format": "json"
-}
+    url_lud = "https://bdl.stat.gov.pl/api/v1/data/by-variable/72305"
+    url_urbanizacja = "https://bdl.stat.gov.pl/api/v1/data/by-variable/1725015"
+    url_wiek = "https://bdl.stat.gov.pl/api/v1/data/by-variable/746289"
 
-params_urbanizacja = {
-    "unit-level": 5,
-    "year": 2024,
-    "page-size": 100,
-    "format": "json"
-}
+    params_ludnosc = {"unit-level": 5, "year": 2024, "page-size": 100, "format": "json"}
+    params_urbanizacja = {"unit-level": 5, "year": 2024, "page-size": 100, "format": "json"}
+    param_wiek = {"unit-level": 5, "year": 2024, "page-size": 100, "format": "json"}
 
-param_wiek = {
-    "unit-level": 5,
-    "year": 2024,
-    "page-size": 100,
-    "format": "json" 
-}
+    teryt_pos = [2, 3, 7, 8]
 
-url_urbanizacja = "https://bdl.stat.gov.pl/api/v1/data/by-variable/1725015"
-url_wiek = "https://bdl.stat.gov.pl/api/v1/data/by-variable/746289"
+    db = SessionLocal()
+    try:
+        while url_lud:
+            response = requests.get(url_lud, params=params_ludnosc)
+            time.sleep(0.5)
+            response.raise_for_status()
+            data = response.json()
 
-teryt_pos = [2, 3, 7, 8]
+            if "results" not in data:
+                break
 
-db = SessionLocal()
-try:
-    while url_lud:
-        response = requests.get(url_lud, params=params_ludnosc)
-        time.sleep(0.5)
-        response.raise_for_status()
-        data = response.json()
-        
-        if "results" not in data:
-            break
+            for res in data["results"]:
+                clean_id = "".join([res["id"][i] for i in teryt_pos])
 
-        for res in data["results"]:
-            clean_id = "".join([res["id"][i] for i in teryt_pos])
-            
-            existing = db.query(GUSRecord).filter_by(id_powiat=str(clean_id), rok=res["values"][0]["year"]).first()
-            
-            if existing:
-                existing.ludnosc = res["values"][0]["val"]
-            else:
-                new_rec = GUSRecord(
-                    id_powiat = str(clean_id), # 4 cyfrowe id powiatu          
-                    nazwa=res["name"],
-                    rok=int(res["values"][0]["year"]),
-                    ludnosc=int(res["values"][0]["val"])
-                )
-                db.add(new_rec)
-        
-        db.commit() 
-        
-        url_lud = data.get("links", {}).get("next")
-        params_ludnosc = {} 
+                existing = db.query(GUSRecord).filter_by(id_powiat=str(clean_id), rok=res["values"][0]["year"]).first()
 
-    print("Populacja powiatów 2024 załadowana do PostgreSQL")
+                if existing:
+                    existing.ludnosc = res["values"][0]["val"]
+                else:
+                    new_rec = GUSRecord(
+                        id_powiat=str(clean_id),
+                        nazwa=res["name"],
+                        rok=int(res["values"][0]["year"]),
+                        ludnosc=int(res["values"][0]["val"])
+                    )
+                    db.add(new_rec)
 
-    while url_urbanizacja:
-        response = requests.get(url_urbanizacja, params=params_urbanizacja)
-        time.sleep(0.5)
-        response.raise_for_status()
-        data = response.json()
+            db.commit()
 
-        if "results" not in data:
-            break
+            url_lud = data.get("links", {}).get("next")
+            params_ludnosc = {}
 
-        for res in data["results"]:
-            clean_id = "".join([res["id"][i] for i in teryt_pos])
+        print("Populacja powiatów 2024 załadowana do PostgreSQL")
 
-            existing = (
-                db.query(GUSRecord)
-                .filter_by(
-                    id_powiat=str(clean_id),
-                    rok=int(res["values"][0]["year"])
-                )
-                .first()
-            )
+        while url_urbanizacja:
+            response = requests.get(url_urbanizacja, params=params_urbanizacja)
+            time.sleep(0.5)
+            response.raise_for_status()
+            data = response.json()
 
-            if existing:
-                existing.wskaznik_urbanizacji = float(
-                    res["values"][0]["val"]
+            if "results" not in data:
+                break
+
+            for res in data["results"]:
+                clean_id = "".join([res["id"][i] for i in teryt_pos])
+
+                existing = (
+                    db.query(GUSRecord)
+                    .filter_by(id_powiat=str(clean_id), rok=int(res["values"][0]["year"]))
+                    .first()
                 )
 
-        db.commit()
+                if existing:
+                    existing.wskaznik_urbanizacji = float(res["values"][0]["val"])
 
-        url_urbanizacja = data.get("links", {}).get("next")
-        params_urbanizacja = {}
+            db.commit()
 
-    print("Wskaźnik urbanizacji załadowany do PostgreSQL")
+            url_urbanizacja = data.get("links", {}).get("next")
+            params_urbanizacja = {}
 
-    while url_wiek:
-        response = requests.get(url_wiek, params=param_wiek)
-        time.sleep(0.5)
-        response.raise_for_status()
-        data = response.json()
+        print("Wskaźnik urbanizacji załadowany do PostgreSQL")
 
-        if "results" not in data:
-            break
+        while url_wiek:
+            response = requests.get(url_wiek, params=param_wiek)
+            time.sleep(0.5)
+            response.raise_for_status()
+            data = response.json()
 
-        for res in data["results"]:
-            clean_id = "".join([res["id"][i] for i in teryt_pos])
+            if "results" not in data:
+                break
 
-            existing = (
-                db.query(GUSRecord)
-                .filter_by(
-                    id_powiat=str(clean_id),
-                    rok=int(res["values"][0]["year"])
-                )
-                .first()
-            )
+            for res in data["results"]:
+                clean_id = "".join([res["id"][i] for i in teryt_pos])
 
-            if existing:
-                existing.wiek = float(
-                    res["values"][0]["val"]
+                existing = (
+                    db.query(GUSRecord)
+                    .filter_by(id_powiat=str(clean_id), rok=int(res["values"][0]["year"]))
+                    .first()
                 )
 
-        db.commit()
+                if existing:
+                    existing.wiek = float(res["values"][0]["val"])
 
-        url_wiek = data.get("links", {}).get("next")
-        param_wiek = {}
+            db.commit()
 
-    print("Wiek załadowany do PostgreSQL")
+            url_wiek = data.get("links", {}).get("next")
+            param_wiek = {}
 
-except Exception as e:
-    print(f"Wystąpił błąd: {e}")
-    db.rollback()
-finally:
-    db.close()
+        print("Wiek załadowany do PostgreSQL")
+
+    except Exception as e:
+        print(f"Wystąpił błąd: {e}")
+        db.rollback()
+    finally:
+        db.close()
 

@@ -5,8 +5,9 @@ services:
 
   backend:
     volumes:
-      - ./backend:/app   # montujemy kod — zmiany widoczne bez rebuild
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      - ./backend:/app/backend   # montujemy kod — zmiany widoczne bez rebuild
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/namesdb
       APP_ENV: development
+      PYTHONPATH: /app

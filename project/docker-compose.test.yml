@@ -4,9 +4,11 @@ services:
       POSTGRES_DB: namesdb_test   # osobna baza testowa, nie nadpisuje produkcyjnej
     ports:
       - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
 
   backend:
-    command: python -m pytest tests/ -v --tb=short
+    command: python -m pytest backend/tests/ -v --tb=short
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/namesdb_test
       APP_ENV: test
@@ -16,3 +18,6 @@ services:
 
   frontend:
     profiles: ["skip"]   # frontend nie jest potrzebny przy testach backendu
+
+volumes:
+  postgres_test_data:
