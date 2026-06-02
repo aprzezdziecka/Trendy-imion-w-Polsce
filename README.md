@@ -73,7 +73,8 @@ System wykorzystuje dane pochodzące z dwóch oficjalnych źródeł publicznych.
 
 * imię dziecka,
 * płeć (M/K),
-* liczba nadań danego imienia.
+* liczba nadań danego imienia,
+* gmina, powiat, województwo.
 
 Dane są importowane do bazy PostgreSQL i wykorzystywane do tworzenia rankingów oraz analiz popularności imion.
 
