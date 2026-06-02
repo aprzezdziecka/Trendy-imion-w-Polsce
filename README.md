@@ -80,7 +80,7 @@ Dane są importowane do bazy PostgreSQL i wykorzystywane do tworzenia rankingów
 
 ### 2. Bank Danych Lokalnych GUS
 
-Źródłem danych są pliki statystyczne oraz dane pobierane z API GUS.
+Źródłem danych są dane pobierane z API GUS.
 
 **Przetwarzane dane:**
 
